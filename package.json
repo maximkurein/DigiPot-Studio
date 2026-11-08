@@ -1,0 +1,43 @@
+{
+  "name": "digipot-studio",
+  "private": true,
+  "version": "0.1.1",
+  "description": "DigiPot Studio — 8-битный цифровой потенциометр с EEPROM и SPI",
+  "author": "Kurein M N",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maximkurein/DigiPot-Studio.git"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "app": "tauri dev",
+    "app:build": "tauri build",
+    "icons": "tauri icon public/icon.svg",
+    "server": "cargo run --release -p digipot-server --",
+    "web": "vite build && cargo run --release -p digipot-server",
+    "test": "cargo test -p digipot-core"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-dialog": "^2.8.4",
+    "lucide-react": "^1.70.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@tauri-apps/cli": "^2.12.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.7"
+  }
+}

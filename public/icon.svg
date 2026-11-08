@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- App icon: MCP4161 — резистивная цепочка A→B (256 отводов) и движок W.
+       Крупные формы, чтобы читалось в 32 px. После правки: npm run icons -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#151b2b"/>
+      <stop offset="1" stop-color="#070a11"/>
+    </linearGradient>
+    <linearGradient id="track" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#818cf8"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="none" stroke="#2a3346" stroke-width="12"/>
+
+  <!-- выводы корпуса -->
+  <g stroke="#39435c" stroke-width="30" stroke-linecap="round">
+    <path d="M112 330h120M112 512h120M112 694h120"/>
+    <path d="M912 330h-80M912 694h-80"/>
+  </g>
+
+  <!-- резистивная цепочка: A сверху, B снизу -->
+  <rect x="296" y="232" width="176" height="560" rx="88" fill="url(#track)"/>
+  <g stroke="#0b0f18" stroke-width="18" opacity="0.55">
+    <path d="M296 320h176M296 408h176M296 496h176M296 584h176M296 672h176"/>
+  </g>
+
+  <!-- движок W -->
+  <path d="M336 512 L568 388 L568 636 Z" fill="#e6ecf9"/>
+  <path d="M556 512 H700" stroke="#e6ecf9" stroke-width="56" stroke-linecap="round"/>
+  <circle cx="762" cy="512" r="96" fill="#34d399"/>
+  <circle cx="762" cy="512" r="38" fill="#0b0f18"/>
+  <path d="M858 512h54" stroke="#34d399" stroke-width="30" stroke-linecap="round"/>
+</svg>

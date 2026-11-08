@@ -1,0 +1,19 @@
+[package]
+name = "digipot-studio"
+description = "DigiPot Studio — 8-битный цифровой потенциометр с EEPROM и SPI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "digipot_studio_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+digipot-core = { path = "../crates/digipot-core" }
+serde_json = "1"
