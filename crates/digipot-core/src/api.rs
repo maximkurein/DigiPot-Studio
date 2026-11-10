@@ -79,7 +79,8 @@ pub struct Engine {
 }
 
 fn arg<T: for<'de> Deserialize<'de>>(v: &Value, key: &str) -> Result<T> {
-    serde_json::from_value(v.get(key).cloned().unwrap_or(Value::Null)).map_err(|e| Error::Invalid(format!("параметр '{}': {}", key, e)))
+    serde_json::from_value(v.get(key).cloned().unwrap_or(Value::Null))
+        .map_err(|e| Error::Invalid(format!("параметр '{}': {}", key, e)))
 }
 
 fn opt<T: for<'de> Deserialize<'de>>(v: &Value, key: &str) -> Option<T> {
@@ -158,7 +159,18 @@ impl Engine {
     }
 
     fn txn(op: &'static str, note: impl Into<String>) -> Txn {
-        Txn { id: 0, t_ms: 0.0, op, reg: None, tx: None, rx: None, value: None, changes: vec![], note: note.into(), ok: true }
+        Txn {
+            id: 0,
+            t_ms: 0.0,
+            op,
+            reg: None,
+            tx: None,
+            rx: None,
+            value: None,
+            changes: vec![],
+            note: note.into(),
+            ok: true,
+        }
     }
 
     fn note(&mut self, msg: impl Into<String>) {
@@ -305,7 +317,8 @@ impl Engine {
             return Err(Error::Invalid(format!("{} — не ячейка EEPROM", REGS[r].name)));
         }
         self.ee_writes += 1;
-        let note = format!("запись EEPROM {} (№{} за сеанс; ресурс ~1 млн циклов, tWC ≤ 10 мс)", REGS[r].name, self.ee_writes);
+        let note =
+            format!("запись EEPROM {} (№{} за сеанс; ресурс ~1 млн циклов, tWC ≤ 10 мс)", REGS[r].name, self.ee_writes);
         self.write_reg_value(r, value, &note)?;
         std::thread::sleep(Duration::from_secs_f64(model::TWC_MAX_S));
         self.regs[r] = regs::sanitize(r, value);
@@ -315,7 +328,8 @@ impl Engine {
     // ───────────── readback ─────────────
 
     fn read_raw(&mut self, r: usize) -> Result<(Frame, Vec<u8>, Option<u32>)> {
-        let frame = bus::read_frame(r).ok_or_else(|| Error::Invalid("эта шина не поддерживает чтение регистров".into()))?;
+        let frame =
+            bus::read_frame(r).ok_or_else(|| Error::Invalid("эта шина не поддерживает чтение регистров".into()))?;
         let rx = self.transfer(&frame)?;
         let v = bus::parse_read(&rx);
         Ok((frame, rx, v))
@@ -337,7 +351,10 @@ impl Engine {
                     }
                     Some(0x1FF) if r == regs::R_STATUS => {
                         t.ok = false;
-                        t.note = format!("{} — одни единицы: линию SDI/SDO никто не ведёт (питание click, CS, проводка?)", t.note);
+                        t.note = format!(
+                            "{} — одни единицы: линию SDI/SDO никто не ведёт (питание click, CS, проводка?)",
+                            t.note
+                        );
                     }
                     _ => {}
                 }
@@ -421,7 +438,12 @@ impl Engine {
         }
         s.push_str("# адрес\tрегистр\tзначение\n");
         for r in regs::write_order() {
-            s.push_str(&format!("0x{:02X}\t{}\t0x{:03X}\n", REGS[r].addr, REGS[r].name, regs::sanitize(r, self.regs[r])));
+            s.push_str(&format!(
+                "0x{:02X}\t{}\t0x{:03X}\n",
+                REGS[r].addr,
+                REGS[r].name,
+                regs::sanitize(r, self.regs[r])
+            ));
         }
         s.push_str("# EEPROM (справочно, при импорте не записывается):\n");
         for r in (0..NUM_REGS).filter(|&r| regs::nv(r)) {
@@ -440,12 +462,19 @@ impl Engine {
         };
         let mut n = 0;
         let mut w = self.regs;
-        for line in text.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#') && !l.starts_with("//")) {
-            let toks: Vec<&str> = line.split(|c: char| c.is_whitespace() || c == ',' || c == ';' || c == '=' || c == ':').filter(|t| !t.is_empty()).collect();
+        for line in text.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#') && !l.starts_with("//"))
+        {
+            let toks: Vec<&str> = line
+                .split(|c: char| c.is_whitespace() || c == ',' || c == ';' || c == '=' || c == ':')
+                .filter(|t| !t.is_empty())
+                .collect();
             if toks.len() < 2 {
                 continue;
             }
-            let reg = REGS.iter().position(|r| toks.iter().any(|t| t.eq_ignore_ascii_case(r.name))).or_else(|| num(toks[0]).and_then(|a| regs::reg_by_addr(a as u16)));
+            let reg = REGS
+                .iter()
+                .position(|r| toks.iter().any(|t| t.eq_ignore_ascii_case(r.name)))
+                .or_else(|| num(toks[0]).and_then(|a| regs::reg_by_addr(a as u16)));
             if let (Some(r), Some(v)) = (reg, num(toks[toks.len() - 1])) {
                 if regs::writable(r) {
                     w[r] = regs::sanitize(r, v);
@@ -597,7 +626,10 @@ impl Engine {
                 self.regs = w;
                 self.readback = Readback::empty();
                 self.persist();
-                self.note(format!("Питание выключено и включено: движок загружен из EEPROM (NV_WIPER0 = {:03X}h), TCON = 1FFh", w[regs::R_NV_WIPER0]));
+                self.note(format!(
+                    "Питание выключено и включено: движок загружен из EEPROM (NV_WIPER0 = {:03X}h), TCON = 1FFh",
+                    w[regs::R_NV_WIPER0]
+                ));
                 Ok(self.snapshot())
             }
             "curve" => {
@@ -627,7 +659,11 @@ impl Engine {
             "raw" => {
                 // {"hex": "0080"} → full-duplex SPI; {"hex": "0FFF", "drive": 6} → 3-wire read
                 let hex: String = opt(a, "hex").unwrap_or_default();
-                let bytes = if hex.trim().is_empty() { vec![] } else { bus::unhex(&hex).ok_or_else(|| Error::Invalid("ожидаются hex-байты, например 00 80".into()))? };
+                let bytes = if hex.trim().is_empty() {
+                    vec![]
+                } else {
+                    bus::unhex(&hex).ok_or_else(|| Error::Invalid("ожидаются hex-байты, например 00 80".into()))?
+                };
                 if bytes.is_empty() {
                     return Err(Error::Invalid("пустой кадр".into()));
                 }

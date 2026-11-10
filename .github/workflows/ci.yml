@@ -38,8 +38,12 @@ jobs:
       - run: npm ci
       - name: Фронтенд (tsc + vite)
         run: npm run build
+      - name: Форматирование Rust
+        run: cargo fmt --check
       - name: Модель кристалла (digipot-core)
         run: cargo test -p digipot-core
+      - name: Clippy
+        run: cargo clippy -p digipot-core --all-targets -- -D warnings
       - name: Сервер и desktop компилируются
         run: cargo check -p digipot-server -p digipot-studio
 
