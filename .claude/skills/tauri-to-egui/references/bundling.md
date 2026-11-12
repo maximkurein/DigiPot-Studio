@@ -21,6 +21,10 @@ Info.plist keys: `CFBundleName`, `CFBundleDisplayName`, `CFBundleExecutable`,
 `NSHighResolutionCapable=true`, `NSHumanReadableCopyright`, `LSApplicationCategoryType`.
 Validate with `plutil -lint`.
 
+**Also set the window icon in `main.rs`** (`ViewportBuilder::with_icon`, PNG of the same artwork).
+Otherwise eframe installs its default egui logo as the application icon at runtime and the Dock
+shows it instead of the bundle's `.icns`.
+
 Steps:
 
 1. version check (refuse on drift), `cargo test` core + egui;

@@ -75,7 +75,8 @@ Templates for all of these are in `assets/template/` (placeholders `__APP__`, `_
    Checklist: `references/verification.md`.
 9. **Bundle** (macOS): add a `--egui` flag to the project's build script, or drop in
    `assets/template/build_egui_macos.py` — see `references/bundling.md`.
-   Separate bundle id from the Tauri app so both can be installed.
+   Separate bundle id from the Tauri app so both can be installed. Set the window icon in
+   `main.rs` (`with_icon`), or the Dock shows the egui logo instead of the `.icns`.
 10. **Docs**: README run/build lines, CHANGELOG `[Unreleased]`, CLAUDE.md/AGENTS.md architecture
     paragraph, Makefile targets (`egui`, `egui-shots`, `build-mac-egui`), CI job
     (`cargo test/clippy -p <app>-egui`; on Linux CI install `libxkbcommon-dev` etc.), and an

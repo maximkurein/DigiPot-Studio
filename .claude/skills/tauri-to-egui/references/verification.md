@@ -33,6 +33,7 @@ same texts as the web UI.
 - every destructive action asks twice and is rejected by the core without confirm;
 - import / export dialogs open and write files;
 - keyboard shortcuts;
+- launch the bundled `.app`: the Dock icon must be the app icon, not the egui logo;
 - with real hardware or the real backend (not only the simulator), if it exists.
 
 UI automation tools usually need the bundled `.app` (a bundle id) to target the window.
