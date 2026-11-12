@@ -1,6 +1,6 @@
 # Сборка DigiPot Studio
 
-Как собрать **приложение для macOS** (`.app` + `.dmg`) и **установщик для Windows** (`.exe` NSIS + `.msi`), а также веб-сервер `digipot-server`.
+Как собрать **приложение для macOS** (`.app` + `.dmg`) и **установщик для Windows** (`.exe` NSIS + `.msi`), **нативный интерфейс egui** для macOS, а также веб-сервер `digipot-server`.
 
 Связанное: [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) · [docs/release_guide_ru.md](docs/release_guide_ru.md) · [CHANGELOG.md](CHANGELOG.md)
 
@@ -10,6 +10,7 @@
 |-----------|-----------|----------------------------------|
 | **macOS** | `DigiPot-Studio-vX.Y.Z-macos-<arch>.dmg` и `.app.zip` (Tauri, ad-hoc подпись) | Нет |
 | **Windows** | `DigiPot-Studio-Setup-vX.Y.Z-x64.exe` (NSIS) и `DigiPot-Studio-vX.Y.Z-x64.msi` | Нет. WebView2 есть в Windows 10/11; установщик докачает при необходимости |
+| **macOS, egui** | `DigiPot-Studio-egui-vX.Y.Z-macos-<arch>.dmg` и `.app.zip` (без WebView, ad-hoc подпись) | Нет |
 | **Веб / сервер** | `digipot-server` + папка `dist/` | Нет |
 
 Все артефакты складываются в `release/vX.Y.Z/` вместе с `checksum.txt` (SHA-256).
@@ -19,7 +20,7 @@
 | | macOS | Windows |
 |---|---|---|
 | Rust | `rustup` stable (`curl https://sh.rustup.rs -sSf \| sh`) | `rustup` stable, toolchain **MSVC** |
-| Node.js | 20+ (`brew install node`) | 20+ (nodejs.org) |
+| Node.js | 20+ (`brew install node`); для сборки egui не нужен | 20+ (nodejs.org) |
 | Системное | Xcode Command Line Tools: `xcode-select --install` | Visual Studio Build Tools 2022, компонент «Desktop development with C++» |
 | Python | `python3` (есть в macOS) — для проверки версии | Python 3 (необязательно — без него проверка версии пропускается) |
 
@@ -45,7 +46,7 @@ python3 tools/update_version.py bump patch    # 0.1.0 → 0.1.1 во всех ф
 ## Шаг 2. Проверка
 
 ```bash
-make check     # версии + tsc + vite build + cargo test + cargo check
+make check     # версии + tsc + vite build + cargo test (ядро и egui) + cargo check
 ```
 
 ## Шаг 3. Сборка

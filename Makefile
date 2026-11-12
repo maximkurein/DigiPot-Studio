@@ -35,7 +35,7 @@ test: ## Тесты модели кристалла (digipot-core)
 check: ## Полная проверка: версии, типы TS, сборка фронтенда, тесты, cargo check
 	$(PY) tools/update_version.py status
 	npm run build
-	cargo test -p digipot-core
+	cargo test -p digipot-core -p digipot-egui
 	cargo check -p digipot-server -p digipot-studio -p digipot-egui
 
 fmt: ## Форматирование Rust
