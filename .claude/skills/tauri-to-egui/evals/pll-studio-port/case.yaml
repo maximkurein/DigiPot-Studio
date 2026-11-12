@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: pll-studio-port
+expected_outcome: |
+  The agent runs scripts/inventory.py on ~/Project/PLL-Studio, writes a port plan (10 views,
+  37 RPC commands of pll-core, Plot.tsx math checked), adds a typed State + Engine::state() to
+  pll-core with get_state JSON unchanged, creates crates/pll-egui next to src-tauri from the
+  template (worker thread, Shared/Act, theme from the CSS variables, shots tour), ports at least
+  the shell and two screens, keeps `npm run build` and the core tests green, passes clippy
+  -D warnings, shows screenshots of both themes, and does not commit.

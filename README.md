@@ -68,7 +68,7 @@ npm ci
 npm run app        # desktop-приложение (Tauri, hot reload)
 ```
 
-Нативный интерфейс на egui (без WebView и Node, в разработке рядом с Tauri): `make egui` или `cargo run -p digipot-egui --release`. Он использует то же ядро и тот же файл настроек, что и Tauri-приложение. Как он устроен, с примерами кода — [EGUI.md](EGUI.md).
+Нативный интерфейс на egui (без WebView и Node, в разработке рядом с Tauri): `make egui` или `cargo run -p digipot-egui --release`. Он использует то же ядро и тот же файл настроек, что и Tauri-приложение. Как он устроен, с примерами кода — [EGUI.md](EGUI.md). Перенести так же другой Tauri-проект — скил [`tauri-to-egui`](.claude/skills/tauri-to-egui/README.md) и промт [PROMPT_TAURI_TO_EGUI.md](PROMPT_TAURI_TO_EGUI.md).
 
 Веб-режим (удалённая лаборатория): `npm run web` → http://127.0.0.1:7878. Проверка модели из консоли: `cargo run -p digipot-core --example probe -- 200`.
 
