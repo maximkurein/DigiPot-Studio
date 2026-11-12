@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/digipot-core", "crates/digipot-server", "src-tauri"]
+members = ["crates/digipot-core", "crates/digipot-server", "crates/digipot-egui", "src-tauri"]
 
 [workspace.package]
 version = "0.1.1"

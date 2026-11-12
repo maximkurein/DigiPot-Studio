@@ -1,5 +1,5 @@
 # DigiPot Studio — основные команды. `make` или `make help` — список.
-.PHONY: help install dev web server app test check fmt lint build-mac build-mac-universal build-web version version-status bump-patch bump-minor bump-major clean
+.PHONY: help install dev web server app egui egui-shots test check fmt lint build-mac build-mac-universal build-web version version-status bump-patch bump-minor bump-major clean
 .DEFAULT_GOAL := help
 
 PY ?= python3
@@ -13,6 +13,12 @@ install: ## Установить npm-зависимости (Rust-зависим
 
 app: ## Desktop-приложение в режиме разработки (Tauri + hot reload)
 	npm run app
+
+egui: ## Нативный интерфейс на egui (без WebView и Node)
+	cargo run --release -p digipot-egui
+
+egui-shots: ## Снимки всех экранов egui в target/egui-shots/ (визуальная проверка)
+	DIGIPOT_SHOTS=target/egui-shots cargo run -p digipot-egui
 
 dev: ## Веб-интерфейс для разработки: сервер :7878 + Vite :1420 (Ctrl+C — остановить оба)
 	@trap 'kill 0' INT TERM; cargo run -p digipot-server -- --port 7878 & npm run dev; wait
@@ -30,7 +36,7 @@ check: ## Полная проверка: версии, типы TS, сборка
 	$(PY) tools/update_version.py status
 	npm run build
 	cargo test -p digipot-core
-	cargo check -p digipot-server -p digipot-studio
+	cargo check -p digipot-server -p digipot-studio -p digipot-egui
 
 fmt: ## Форматирование Rust
 	cargo fmt --all

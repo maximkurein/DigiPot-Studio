@@ -62,7 +62,20 @@ pub struct FieldDef {
 
 impl FieldDef {
     pub const fn new(name: &'static str, reg: usize, msb: u8, lsb: u8) -> Self {
-        FieldDef { name, reg, msb, lsb, access: Access::Rw, default: 0, title: "", desc: "", options: &[], block: "", unit: "", signed: false }
+        FieldDef {
+            name,
+            reg,
+            msb,
+            lsb,
+            access: Access::Rw,
+            default: 0,
+            title: "",
+            desc: "",
+            options: &[],
+            block: "",
+            unit: "",
+            signed: false,
+        }
     }
     pub const fn access(self, access: Access) -> Self {
         FieldDef { access, ..self }
@@ -125,20 +138,49 @@ pub const EE_COUNT: usize = 10;
 pub const FULL_SCALE: u32 = 0x100;
 
 pub const REGS: &[RegDef] = &[
-    RegDef { addr: 0x00, name: "WIPER0", title: "Положение движка (оперативное, RAM)", reset: 0x080 },
-    RegDef { addr: 0x02, name: "NV_WIPER0", title: "Положение движка после включения (EEPROM)", reset: 0x080 },
+    RegDef {
+        addr: 0x00, name: "WIPER0", title: "Положение движка (оперативное, RAM)", reset: 0x080
+    },
+    RegDef {
+        addr: 0x02, name: "NV_WIPER0", title: "Положение движка после включения (EEPROM)", reset: 0x080
+    },
     RegDef { addr: 0x04, name: "TCON", title: "Подключение выводов A, W, B (RAM)", reset: 0x1FF },
-    RegDef { addr: 0x05, name: "STATUS", title: "Состояние: запись EEPROM, WiperLock, защита (только чтение)", reset: 0x1E0 },
-    RegDef { addr: 0x06, name: "EE06", title: "Пользовательская ячейка EEPROM 06h", reset: 0x0FF },
-    RegDef { addr: 0x07, name: "EE07", title: "Пользовательская ячейка EEPROM 07h", reset: 0x0FF },
-    RegDef { addr: 0x08, name: "EE08", title: "Пользовательская ячейка EEPROM 08h", reset: 0x0FF },
-    RegDef { addr: 0x09, name: "EE09", title: "Пользовательская ячейка EEPROM 09h", reset: 0x0FF },
-    RegDef { addr: 0x0A, name: "EE0A", title: "Пользовательская ячейка EEPROM 0Ah", reset: 0x0FF },
-    RegDef { addr: 0x0B, name: "EE0B", title: "Пользовательская ячейка EEPROM 0Bh", reset: 0x0FF },
-    RegDef { addr: 0x0C, name: "EE0C", title: "Пользовательская ячейка EEPROM 0Ch", reset: 0x0FF },
-    RegDef { addr: 0x0D, name: "EE0D", title: "Пользовательская ячейка EEPROM 0Dh", reset: 0x0FF },
-    RegDef { addr: 0x0E, name: "EE0E", title: "Пользовательская ячейка EEPROM 0Eh", reset: 0x0FF },
-    RegDef { addr: 0x0F, name: "EE0F", title: "Пользовательская ячейка EEPROM 0Fh", reset: 0x0FF },
+    RegDef {
+        addr: 0x05,
+        name: "STATUS",
+        title: "Состояние: запись EEPROM, WiperLock, защита (только чтение)",
+        reset: 0x1E0,
+    },
+    RegDef {
+        addr: 0x06, name: "EE06", title: "Пользовательская ячейка EEPROM 06h", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x07, name: "EE07", title: "Пользовательская ячейка EEPROM 07h", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x08, name: "EE08", title: "Пользовательская ячейка EEPROM 08h", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x09, name: "EE09", title: "Пользовательская ячейка EEPROM 09h", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x0A, name: "EE0A", title: "Пользовательская ячейка EEPROM 0Ah", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x0B, name: "EE0B", title: "Пользовательская ячейка EEPROM 0Bh", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x0C, name: "EE0C", title: "Пользовательская ячейка EEPROM 0Ch", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x0D, name: "EE0D", title: "Пользовательская ячейка EEPROM 0Dh", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x0E, name: "EE0E", title: "Пользовательская ячейка EEPROM 0Eh", reset: 0x0FF
+    },
+    RegDef {
+        addr: 0x0F, name: "EE0F", title: "Пользовательская ячейка EEPROM 0Fh", reset: 0x0FF
+    },
 ];
 
 pub const NUM_REGS: usize = REGS.len();
@@ -146,7 +188,8 @@ pub type Words = [u32; NUM_REGS];
 
 use Access::*;
 
-const WIPER_DESC: &str = "Код N = 0…256 (000h…100h). 0 — движок W соединён с выводом B, 256 — с выводом A, 128 (80h) — середина. \
+const WIPER_DESC: &str =
+    "Код N = 0…256 (000h…100h). 0 — движок W соединён с выводом B, 256 — с выводом A, 128 (80h) — середина. \
 Коды 101h…1FFh тоже дают полную шкалу, но команды инкремента/декремента в этой зоне игнорируются (табл. 5-1).";
 const EE_DESC: &str = "9-битная ячейка общего назначения в EEPROM (§4.2.1.1). С завода — 0FFh. Запись занимает 5…10 мс (tWC) и расходует ресурс (1 млн циклов).";
 
@@ -356,7 +399,13 @@ mod tests {
         // Keeps REGS[].reset and FieldDef.default consistent (both come from the datasheet).
         let d = defaults();
         for f in FIELDS {
-            assert_eq!(f.get(&d), f.default, "{}: reset value of {} disagrees with field default", f.name, REGS[f.reg].name);
+            assert_eq!(
+                f.get(&d),
+                f.default,
+                "{}: reset value of {} disagrees with field default",
+                f.name,
+                REGS[f.reg].name
+            );
         }
     }
 
@@ -386,7 +435,10 @@ mod tests {
     fn datasheet_values() {
         // Table 4-1 addresses, Table 4-2 factory wiper 80h, TCON POR 1FFh, STATUS D8:D5 = 1.
         let d = defaults();
-        assert_eq!(REGS.iter().map(|r| r.addr).collect::<Vec<_>>(), vec![0x00, 0x02, 0x04, 0x05, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        assert_eq!(
+            REGS.iter().map(|r| r.addr).collect::<Vec<_>>(),
+            vec![0x00, 0x02, 0x04, 0x05, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        );
         assert_eq!(get(&d, "WIPER0"), 0x80);
         assert_eq!(get(&d, "NV_WIPER0"), 0x80);
         assert_eq!(d[R_TCON], 0x1FF);

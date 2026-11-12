@@ -74,7 +74,8 @@ impl VirtualChip {
         for r in REGS {
             mem[r.addr as usize] = r.reset as u16;
         }
-        let mut c = VirtualChip { mem, env, ee_pending: None, ee_writes: 0, cmd_errors: 0, conflicts: 0, last_error: None };
+        let mut c =
+            VirtualChip { mem, env, ee_pending: None, ee_writes: 0, cmd_errors: 0, conflicts: 0, last_error: None };
         c.power_on();
         c
     }
@@ -169,7 +170,9 @@ impl VirtualChip {
                 }
                 Ok(None)
             }
-            Cmd::Inc { addr } | Cmd::Dec { addr } => Err(format!("{:02X}h: инкремент/декремент разрешены только для оперативного движка", addr)),
+            Cmd::Inc { addr } | Cmd::Dec { addr } => {
+                Err(format!("{:02X}h: инкремент/декремент разрешены только для оперативного движка", addr))
+            }
         }
     }
 
@@ -205,7 +208,8 @@ impl VirtualChip {
         let (cmds, _) = bus::parse(tx);
         if cmds.iter().any(|c| matches!(c, Cmd::Read { .. })) {
             self.conflicts += 1;
-            self.last_error = Some("чтение полнодуплексным кадром: мост и кристалл одновременно управляют линией SDI/SDO".into());
+            self.last_error =
+                Some("чтение полнодуплексным кадром: мост и кристалл одновременно управляют линией SDI/SDO".into());
         }
         self.frame(tx);
         vec![0xFF; tx.len()]

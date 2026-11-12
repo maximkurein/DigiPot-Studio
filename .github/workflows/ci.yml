@@ -25,7 +25,7 @@ jobs:
       - name: Системные пакеты (WebKitGTK для Tauri, libudev для serialport)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libudev-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libudev-dev libxkbcommon-dev
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -38,10 +38,18 @@ jobs:
       - run: npm ci
       - name: Фронтенд (tsc + vite)
         run: npm run build
+      - name: Форматирование Rust
+        run: cargo fmt --check
       - name: Модель кристалла (digipot-core)
         run: cargo test -p digipot-core
+      - name: Clippy
+        run: cargo clippy -p digipot-core --all-targets -- -D warnings
       - name: Сервер и desktop компилируются
         run: cargo check -p digipot-server -p digipot-studio
+      - name: Нативный интерфейс egui (тесты и clippy)
+        run: |
+          cargo test -p digipot-egui
+          cargo clippy -p digipot-egui --all-targets -- -D warnings
 
   desktop:
     name: Сборка ${{ matrix.name }}

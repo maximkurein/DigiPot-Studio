@@ -91,9 +91,19 @@ pub enum Frame {
     Spi(Vec<u8>),
     /// 3-wire SPI: drive the first `drive_bits` bits of `tx`, then release the
     /// data line and sample it for the rest of the frame.
-    Spi3 { tx: Vec<u8>, drive_bits: u32 },
-    I2cWrite { addr: u8, data: Vec<u8> },
-    I2cRead { addr: u8, wr: Vec<u8>, n: usize },
+    Spi3 {
+        tx: Vec<u8>,
+        drive_bits: u32,
+    },
+    I2cWrite {
+        addr: u8,
+        data: Vec<u8>,
+    },
+    I2cRead {
+        addr: u8,
+        wr: Vec<u8>,
+        n: usize,
+    },
 }
 
 pub fn describe() -> String {

@@ -31,12 +31,22 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { rab_nominal: 10_000.0, vdd: 3.3, va: 3.3, vb: 0.0, load_ohm: 0.0, rw_ohm: 75.0, temp_c: 25.0, sim_rab_dev_pct: 4.0 }
+        Settings {
+            rab_nominal: 10_000.0,
+            vdd: 3.3,
+            va: 3.3,
+            vb: 0.0,
+            load_ohm: 0.0,
+            rw_ohm: 75.0,
+            temp_c: 25.0,
+            sim_rab_dev_pct: 4.0,
+        }
     }
 }
 
 /// RAB options (part number suffix, Ω).
-pub const RAB_OPTIONS: [(&str, f64); 4] = [("-502", 5_000.0), ("-103", 10_000.0), ("-503", 50_000.0), ("-104", 100_000.0)];
+pub const RAB_OPTIONS: [(&str, f64); 4] =
+    [("-502", 5_000.0), ("-103", 10_000.0), ("-503", 50_000.0), ("-104", 100_000.0)];
 /// Maximum current through A, W or B (electrical characteristics, Note 6).
 pub const IW_MAX: f64 = 2.5e-3;
 /// RAB tolerance (± 20 %).
@@ -85,7 +95,12 @@ pub struct Terminals {
 
 pub fn terminals(w: &Words) -> Terminals {
     let shutdown = regs::get(w, "R0HW") == 0;
-    Terminals { a: !shutdown && regs::get(w, "R0A") == 1, w: regs::get(w, "R0W") == 1, b: regs::get(w, "R0B") == 1, shutdown }
+    Terminals {
+        a: !shutdown && regs::get(w, "R0A") == 1,
+        w: regs::get(w, "R0W") == 1,
+        b: regs::get(w, "R0B") == 1,
+        shutdown,
+    }
 }
 
 /// Electrical state of the potentiometer for a given code and RAB.
@@ -267,7 +282,11 @@ pub fn derive(w: &Words, s: &Settings) -> Derived {
 
     // supply (electrical characteristics: 2.7…5.5 V specified, 1.8…2.7 V serial interface only)
     if s.vdd > 5.5 {
-        issue("error", "por", format!("VDD {:.2} В выше 5.5 В — вне рабочего диапазона (абсолютный максимум 7.0 В)", s.vdd));
+        issue(
+            "error",
+            "por",
+            format!("VDD {:.2} В выше 5.5 В — вне рабочего диапазона (абсолютный максимум 7.0 В)", s.vdd),
+        );
     } else if s.vdd < 1.8 {
         issue("error", "por", format!("VDD {:.2} В ниже 1.8 В — кристалл не работает", s.vdd));
     } else if s.vdd < 2.7 {
@@ -303,10 +322,23 @@ pub fn derive(w: &Words, s: &Settings) -> Derived {
         issue("warn", "wiper", format!("Код {:03X}h больше 100h: это тоже полная шкала (W = A), но инкремент и декремент здесь игнорируются (табл. 5-1)", c.code_raw));
     }
     if c.term.shutdown {
-        issue("info", "tcon", "R0HW = 0: конфигурация отключения — вывод A разомкнут, движок соединён с B, через цепочку ток не течёт".into());
+        issue(
+            "info",
+            "tcon",
+            "R0HW = 0: конфигурация отключения — вывод A разомкнут, движок соединён с B, через цепочку ток не течёт"
+                .into(),
+        );
     } else if !(c.term.a && c.term.w && c.term.b) {
-        let off: Vec<&str> = [("A", c.term.a), ("W", c.term.w), ("B", c.term.b)].iter().filter(|x| !x.1).map(|x| x.0).collect();
-        issue("info", "tcon", format!("TCON: отключены выводы {} — это режим пониженного потребления, делитель не работает", off.join(", ")));
+        let off: Vec<&str> =
+            [("A", c.term.a), ("W", c.term.w), ("B", c.term.b)].iter().filter(|x| !x.1).map(|x| x.0).collect();
+        issue(
+            "info",
+            "tcon",
+            format!(
+                "TCON: отключены выводы {} — это режим пониженного потребления, делитель не работает",
+                off.join(", ")
+            ),
+        );
     }
     if c.nv_code != c.code_raw {
         issue(
@@ -430,7 +462,10 @@ mod tests {
         let over = Settings { va: 4.0, ..Settings::default() };
         assert!(derive(&regs::starter(), &over).issues.iter().any(|i| i.level == "error" && i.block == "terminals"));
         let heavy = Settings { load_ohm: 1_000.0, ..Settings::default() };
-        assert!(derive(&regs::starter(), &heavy).issues.iter().any(|i| i.level == "error" && i.text.contains("2.5 мА")));
+        assert!(derive(&regs::starter(), &heavy)
+            .issues
+            .iter()
+            .any(|i| i.level == "error" && i.text.contains("2.5 мА")));
         let low = Settings { rab_nominal: 5_000.0, vdd: 5.0, va: 5.0, ..Settings::default() };
         assert!(derive(&regs::starter(), &low).issues.iter().all(|i| i.level != "error"), "5 V on 5 kΩ = 1 mA is fine");
     }

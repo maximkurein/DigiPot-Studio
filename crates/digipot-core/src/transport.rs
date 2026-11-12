@@ -171,7 +171,12 @@ impl SerialBridge {
 
 impl Link for SerialBridge {
     fn info(&self) -> LinkInfo {
-        LinkInfo { kind: "serial", name: format!("Мост {}", self.path), detail: self.ident.clone(), readback: bus::can_read() }
+        LinkInfo {
+            kind: "serial",
+            name: format!("Мост {}", self.path),
+            detail: self.ident.clone(),
+            readback: bus::can_read(),
+        }
     }
     fn spi(&mut self, tx: &[u8]) -> Result<Vec<u8>> {
         self.hex_reply(&format!("S {}", bus::hex(tx)))
@@ -180,7 +185,10 @@ impl Link for SerialBridge {
         let r = self.hex_reply(&format!("T {} {}", bus::hex(tx), drive_bits));
         if let Err(Error::Link(m)) = &r {
             if m.contains("ERR") {
-                return Err(Error::Link(format!("{} — прошивка моста без команды T (3-проводное чтение)? Обновите firmware/bridge", m)));
+                return Err(Error::Link(format!(
+                    "{} — прошивка моста без команды T (3-проводное чтение)? Обновите firmware/bridge",
+                    m
+                )));
             }
         }
         r
@@ -218,7 +226,15 @@ pub fn list_ports() -> Vec<PortInfo> {
         .unwrap_or_default()
         .into_iter()
         .map(|p| {
-            let mut info = PortInfo { path: p.port_name.clone(), kind: "other".into(), vid: None, pid: None, manufacturer: None, product: None, serial: None };
+            let mut info = PortInfo {
+                path: p.port_name.clone(),
+                kind: "other".into(),
+                vid: None,
+                pid: None,
+                manufacturer: None,
+                product: None,
+                serial: None,
+            };
             match p.port_type {
                 serialport::SerialPortType::UsbPort(u) => {
                     info.kind = "usb".into();
@@ -271,9 +287,12 @@ fn vendor_hint(vid: u16, pid: u16) -> (Option<&'static str>, bool) {
         (0x045B, _) => (Some("Renesas — интерфейс оценочной платы"), true),
         (0x0451, _) => (Some("Texas Instruments — USB-контроллер / USB2ANY"), true),
         (0x1FC9, _) => (Some("NXP — USB-контроллер"), true),
-        (0x0483, 0x3748) | (0x0483, 0x374B) | (0x0483, 0x374E) | (0x0483, 0x374F) | (0x0483, 0x3752) | (0x0483, 0x3753) => {
-            (Some("ST-LINK — Nucleo можно использовать как мост (firmware/bridge)"), false)
-        }
+        (0x0483, 0x3748)
+        | (0x0483, 0x374B)
+        | (0x0483, 0x374E)
+        | (0x0483, 0x374F)
+        | (0x0483, 0x3752)
+        | (0x0483, 0x3753) => (Some("ST-LINK — Nucleo можно использовать как мост (firmware/bridge)"), false),
         (0x0483, _) => (Some("STMicroelectronics — USB-устройство"), false),
         (0x2E8A, _) => (Some("Raspberry Pi RP2040/RP2350 — подходит как мост"), false),
         (0x303A, _) => (Some("Espressif ESP32-S2/S3/C3 — подходит как мост"), false),

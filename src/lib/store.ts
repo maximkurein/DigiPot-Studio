@@ -40,6 +40,8 @@ interface Store {
 
 const THEME_KEY = "digipot-studio.theme";
 let toastId = 1;
+let logFetch: Promise<void> | null = null;
+let logRerun = false;
 
 function loadTheme(): "dark" | "light" {
   try {
@@ -123,16 +125,29 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
+  // poll() and call() may both ask for new entries at once; coalesce into one
+  // request (re-run once if more was requested meanwhile) so entries are never duplicated.
   fetchLog: async () => {
-    try {
-      const r = await rpc<{ entries: Txn[]; head: number }>("log", { since: get().logHead });
-      if (r.entries.length || r.head !== get().logHead) {
-        const log = [...get().log, ...r.entries].slice(-2000);
-        set({ log, logHead: r.head });
-      }
-    } catch {
-      /* ignore */
+    if (logFetch) {
+      logRerun = true;
+      return logFetch;
     }
+    logFetch = (async () => {
+      do {
+        logRerun = false;
+        try {
+          const r = await rpc<{ entries: Txn[]; head: number }>("log", { since: get().logHead });
+          if (r.entries.length || r.head !== get().logHead) {
+            const log = [...get().log, ...r.entries].slice(-2000);
+            set({ log, logHead: r.head });
+          }
+        } catch {
+          /* ignore */
+        }
+      } while (logRerun);
+      logFetch = null;
+    })();
+    return logFetch;
   },
 
   go: (view, block) => set(block !== undefined ? { view, block } : { view }),
