@@ -13,7 +13,7 @@ use crate::about;
 use crate::bus::{self, Frame};
 use crate::model::{self, Derived, Settings};
 use crate::regs::{self, Words, FIELDS, FULL_SCALE, NUM_REGS, REGS};
-use crate::sim::VirtualChip;
+use crate::sim::{Meter, SimStatus, VirtualChip};
 use crate::transport::{self, Link, SerialBridge, PINS};
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
@@ -48,10 +48,34 @@ struct Persist {
     auto_apply: bool,
 }
 
+/// Last read-back of every register and whether it matched the expected word.
 #[derive(Serialize, Clone, Debug)]
-struct Readback {
-    words: Vec<Option<u32>>,
-    matches: Vec<Option<bool>>,
+pub struct Readback {
+    pub words: Vec<Option<u32>>,
+    pub matches: Vec<Option<bool>>,
+}
+
+/// Typed snapshot of the engine — what `get_state` returns as JSON. Native UIs
+/// (digipot-egui) read it directly instead of going through the RPC.
+#[derive(Serialize, Clone, Debug)]
+pub struct State {
+    pub regs: Words,
+    pub desired: Words,
+    pub dev_regs: Option<Words>,
+    pub dirty: Vec<bool>,
+    pub fields: BTreeMap<&'static str, u32>,
+    pub derived: Derived,
+    pub settings: Settings,
+    pub link: transport::LinkInfo,
+    pub link_error: Option<String>,
+    pub auto_apply: bool,
+    pub pins: BTreeMap<String, bool>,
+    pub inputs: BTreeMap<String, Option<bool>>,
+    pub log_head: u64,
+    pub readback: Readback,
+    pub sim: Option<SimStatus>,
+    pub meter: Option<Meter>,
+    pub ee_writes: u64,
 }
 
 impl Readback {
@@ -393,33 +417,51 @@ impl Engine {
         model::derive(&self.regs, &self.settings)
     }
 
-    fn sim_status(&mut self) -> Option<crate::sim::SimStatus> {
+    fn sim_status(&mut self) -> Option<SimStatus> {
         self.link.as_sim().map(|s| s.poll())
     }
 
+    /// Full typed state (polls the simulator, so it needs `&mut`).
+    pub fn state(&mut self) -> State {
+        State {
+            regs: self.regs,
+            desired: sanitized(&self.regs),
+            dev_regs: self.dev,
+            dirty: self.dirty(),
+            fields: regs::decode(&self.regs),
+            derived: self.derived(),
+            settings: self.settings.clone(),
+            link: self.link.info(),
+            link_error: self.link_error.clone(),
+            auto_apply: self.auto_apply,
+            pins: BTreeMap::new(),
+            inputs: BTreeMap::new(),
+            log_head: self.log_head(),
+            readback: self.readback.clone(),
+            sim: self.sim_status(),
+            meter: self.link.as_sim().map(|s| s.meter()),
+            ee_writes: self.ee_writes,
+        }
+    }
+
     fn snapshot(&mut self) -> Value {
-        let d = self.derived();
-        let sim = self.sim_status();
-        let meter = self.link.as_sim().map(|s| s.meter());
-        json!({
-            "regs": self.regs,
-            "desired": sanitized(&self.regs),
-            "dev_regs": self.dev,
-            "dirty": self.dirty(),
-            "fields": regs::decode(&self.regs),
-            "derived": d,
-            "settings": self.settings,
-            "link": self.link.info(),
-            "link_error": self.link_error,
-            "auto_apply": self.auto_apply,
-            "pins": {},
-            "inputs": {},
-            "log_head": self.next_id - 1,
-            "readback": self.readback,
-            "sim": sim,
-            "meter": meter,
-            "ee_writes": self.ee_writes,
-        })
+        serde_json::to_value(self.state()).unwrap_or(Value::Null)
+    }
+
+    /// Id of the newest bus-log entry (0 = none yet).
+    pub fn log_head(&self) -> u64 {
+        self.next_id - 1
+    }
+
+    /// Bus-log entries newer than `since`.
+    pub fn log_since(&self, since: u64) -> impl Iterator<Item = &Txn> {
+        self.log.iter().filter(move |t| t.id > since)
+    }
+
+    /// Transfer curve over all codes plus the simulator's meter (if any).
+    pub fn curve(&mut self) -> (model::Curve, Option<Meter>) {
+        let c = model::curve(&self.regs, &self.settings);
+        (c, self.link.as_sim().map(|s| s.meter()))
     }
 
     fn status(&mut self) -> Value {

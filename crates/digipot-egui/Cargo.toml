@@ -1,0 +1,19 @@
+[package]
+name = "digipot-egui"
+description = "DigiPot Studio — нативный интерфейс на egui (без WebView)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "digipot-egui"
+path = "src/main.rs"
+
+[dependencies]
+digipot-core = { path = "../digipot-core" }
+serde_json = "1"
+# 0.33 / 0.34: the newest line that builds on Rust 1.88+ (0.34+ needs 1.92)
+eframe = { version = "0.33", default-features = false, features = ["default_fonts", "glow", "persistence", "wayland", "x11"] }
+egui_plot = "0.34"
+egui_extras = "0.33"
+rfd = "0.15"

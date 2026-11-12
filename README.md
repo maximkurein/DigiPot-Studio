@@ -68,6 +68,8 @@ npm ci
 npm run app        # desktop-приложение (Tauri, hot reload)
 ```
 
+Нативный интерфейс на egui (без WebView и Node, в разработке рядом с Tauri): `make egui` или `cargo run -p digipot-egui --release`. Он использует то же ядро и тот же файл настроек, что и Tauri-приложение.
+
 Веб-режим (удалённая лаборатория): `npm run web` → http://127.0.0.1:7878. Проверка модели из консоли: `cargo run -p digipot-core --example probe -- 200`.
 
 | Клавиши | Действие |
@@ -102,6 +104,7 @@ npm run app        # desktop-приложение (Tauri, hot reload)
 crates/digipot-core     Rust: регистры, кадры SPI, модель, симулятор, транспорт, RPC-движок
 crates/digipot-server   HTTP-сервер (веб-режим): та же RPC + раздача интерфейса
 src-tauri/              desktop-оболочка Tauri 2
+crates/digipot-egui     нативный интерфейс на egui/eframe (все экраны, без WebView)
 src/                    интерфейс React 19 + Tailwind 4
 firmware/bridge/        прошивка USB-моста (Arduino-совместимые платы 3.3 В)
 ```
