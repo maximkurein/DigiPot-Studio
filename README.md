@@ -68,7 +68,7 @@ npm ci
 npm run app        # desktop-приложение (Tauri, hot reload)
 ```
 
-Нативный интерфейс на egui (без WebView и Node, в разработке рядом с Tauri): `make egui` или `cargo run -p digipot-egui --release`. Он использует то же ядро и тот же файл настроек, что и Tauri-приложение.
+Нативный интерфейс на egui (без WebView и Node, в разработке рядом с Tauri): `make egui` или `cargo run -p digipot-egui --release`. Он использует то же ядро и тот же файл настроек, что и Tauri-приложение. Как он устроен, с примерами кода — [EGUI.md](EGUI.md). Перенести так же другой Tauri-проект — скил [`tauri-to-egui`](.claude/skills/tauri-to-egui/README.md) и промт [PROMPT_TAURI_TO_EGUI.md](PROMPT_TAURI_TO_EGUI.md).
 
 Веб-режим (удалённая лаборатория): `npm run web` → http://127.0.0.1:7878. Проверка модели из консоли: `cargo run -p digipot-core --example probe -- 200`.
 
@@ -114,6 +114,7 @@ firmware/bridge/        прошивка USB-моста (Arduino-совмест�
 | Платформа | Команда | Результат |
 |---|---|---|
 | macOS | `python3 build_macos.py [--universal]` | `.dmg` и `.app.zip` в `release/vX.Y.Z/` |
+| macOS, egui | `python3 build_macos.py --egui [--universal]` | `DigiPot-Studio-egui-….dmg` и `.app.zip` |
 | Windows | `.\build_windows.ps1` | NSIS `.exe` и `.msi` в `release\vX.Y.Z\` |
 | Веб | `make build-web` | `dist/` + `digipot-server` |
 

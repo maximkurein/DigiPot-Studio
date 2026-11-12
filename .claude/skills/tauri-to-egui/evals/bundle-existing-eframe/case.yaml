@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: bundle-existing-eframe
+expected_outcome: |
+  The project already has an eframe crate. The agent does not rewrite the UI; it adds a macOS
+  bundle step (template build_egui_macos.py or a --egui flag in the existing build script):
+  Info.plist with a bundle id different from the Tauri one, icon.icns, version from the single
+  source, ad-hoc codesign + verify, .app.zip via ditto, .dmg with an Applications link via
+  hdiutil + verify, checksum.txt merged. It builds once, mounts the dmg, checks codesign/lipo,
+  launches the app and reports the paths and sizes.

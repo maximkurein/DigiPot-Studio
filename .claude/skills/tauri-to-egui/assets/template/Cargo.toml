@@ -1,0 +1,20 @@
+[package]
+name = "__APP__-egui"
+description = "__TITLE__ — native UI on egui (no WebView)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "__APP__-egui"
+path = "src/main.rs"
+
+[dependencies]
+__CORE__ = { path = "../__CORE__" }
+serde_json = "1"
+# Pick the newest line that builds on the local rustc (`rustc -V`).
+# DigiPot on Rust 1.88–1.90: eframe 0.33 / egui_plot 0.34 (0.34+ needs 1.92).
+eframe = { version = "0.33", default-features = false, features = ["default_fonts", "glow", "persistence", "wayland", "x11"] }
+egui_plot = "0.34"
+egui_extras = "0.33"
+rfd = "0.15"
