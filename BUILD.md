@@ -78,6 +78,24 @@ xattr -dr com.apple.quarantine "/Applications/DigiPot Studio.app"
 
 Для распространения с нотаризацией нужен сертификат Developer ID: задайте `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` — Tauri подпишет и нотаризует автоматически.
 
+#### Нативный интерфейс egui
+
+```bash
+python3 build_macos.py --egui                  # архитектура этого Mac
+python3 build_macos.py --egui --universal      # Apple Silicon + Intel (lipo)
+```
+
+или `make build-mac-egui` / `make build-mac-egui-universal`. Node не нужен. Скрипт запускает тесты `digipot-core` и `digipot-egui`, собирает `cargo build --release -p digipot-egui`, сам складывает пакет `DigiPot Studio egui.app` (`Info.plist`, иконка `src-tauri/icons/icon.icns`), подписывает его ad-hoc (`codesign --sign -`) и делает `.dmg` через `hdiutil` (в образе — приложение и ярлык «Программы»):
+
+```text
+release/v0.1.1/
+  DigiPot-Studio-egui-v0.1.1-macos-arm64.dmg
+  DigiPot-Studio-egui-v0.1.1-macos-arm64.app.zip
+  checksum.txt        (строки Tauri-сборки той же версии сохраняются)
+```
+
+Bundle id — `com.digipotstudio.egui`, поэтому приложение ставится рядом с Tauri-версией (`com.digipotstudio.desktop`) и не конфликтует с ней; файл настроек у них общий. Промежуточный пакет — `target/egui-bundle/`.
+
 ### Windows
 
 ```powershell
@@ -121,6 +139,7 @@ make build-web
 | Фронтенд | `dist/` |
 | Бинарники Rust | `target/release/` (или `target/<triple>/release/`) |
 | Бандлы Tauri | `target/[<triple>/]release/bundle/{macos,dmg,nsis,msi}/` |
+| Пакет egui (macOS) | `target/egui-bundle/` |
 | Готовые артефакты | `release/vX.Y.Z/` |
 
 ## Проблемы и решения

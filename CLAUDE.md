@@ -20,6 +20,7 @@ make check                     # version status + build + tests + cargo check
 cargo run -p digipot-core --example probe   # CLI sanity probe of the model
 
 python3 build_macos.py [--universal] [--with-server]   # .app + .dmg → release/vX.Y.Z/
+python3 build_macos.py --egui [--universal]            # egui .app + .dmg (no Node), bundle id com.digipotstudio.egui
 .\build_windows.ps1 [-Bundles nsis|msi] [-WithServer]  # NSIS/MSI → release\vX.Y.Z\
 ```
 
@@ -43,7 +44,7 @@ python3 build_macos.py [--universal] [--with-server]   # .app + .dmg → release
 - `transport.rs` — `Link` trait (sim, `SerialBridge` text protocol `BRIDGE`), port listing, USB scan with vendor hints, `PINS`.
 - `api.rs` — `Engine`: auto-apply writes only volatile WIPER0/TCON; EEPROM only via `nv_write {confirm: true}` (waits tWC); `step`, `goto`, `power_cycle` (sim), `curve`; bus log; snapshot.
 
-**Native UI (`crates/digipot-egui`)** — eframe 0.33 / egui_plot 0.34 (newest line that builds on Rust 1.88+). The `Engine` lives on its own thread (`worker.rs`): the UI sends `Job`s over a channel and once per frame takes the published typed `State`, new log entries and replies; repeated `set_field` for one field are coalesced. Views queue `Act`s; mutations still go through `Engine::handle`, so the same rules apply. File dialogs stay on the UI thread (macOS). Same screens and texts as the web UI (`content.rs` mirrors `blocks.ts`/`board.ts`/`lessons.ts` — keep in sync). Same config file as Tauri. `DIGIPOT_SHOTS=<dir>` (or `make egui-shots`) walks every view and saves BMP screenshots for visual checks.
+**Native UI (`crates/digipot-egui`)** — eframe 0.33 / egui_plot 0.34 (newest line that builds on Rust 1.88+). The `Engine` lives on its own thread (`worker.rs`): the UI sends `Job`s over a channel and once per frame takes the published typed `State`, new log entries and replies; repeated `set_field` for one field are coalesced. Views queue `Act`s; mutations still go through `Engine::handle`, so the same rules apply. File dialogs stay on the UI thread (macOS). Same screens and texts as the web UI (`content.rs` mirrors `blocks.ts`/`board.ts`/`lessons.ts` — keep in sync). Same config file as Tauri. `DIGIPOT_SHOTS=<dir>` (or `make egui-shots`) walks every view and saves BMP screenshots for visual checks. Walkthrough with code examples: `EGUI.md`.
 
 **Frontend** — `src/lib/store.ts` (zustand): `snap` (full snapshot after every mutating RPC), `status` (polled every 350 ms), log, view routing. `src/components/fields.tsx` renders any register field from metadata. Views live in `src/views/*View.tsx`; the overview diagram is drawn from `src/lib/blocks.ts`, whose ids match `FieldDef.block`. Board facts live in `src/lib/board.ts`, lessons in `src/lib/lessons.ts`. Charts are the in-house `components/Plot.tsx` (SVG, log axes, dual y, hover).
 

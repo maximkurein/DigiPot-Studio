@@ -16,3 +16,4 @@ src-tauri/gen
 
 # локальная конфигурация Claude Code
 .claude/settings.local.json
+__pycache__/

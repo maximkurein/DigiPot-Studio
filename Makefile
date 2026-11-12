@@ -1,5 +1,5 @@
 # DigiPot Studio — основные команды. `make` или `make help` — список.
-.PHONY: help install dev web server app egui egui-shots test check fmt lint build-mac build-mac-universal build-web version version-status bump-patch bump-minor bump-major clean
+.PHONY: help install dev web server app egui egui-shots test check fmt lint build-mac build-mac-universal build-mac-egui build-mac-egui-universal build-web version version-status bump-patch bump-minor bump-major clean
 .DEFAULT_GOAL := help
 
 PY ?= python3
@@ -50,6 +50,12 @@ build-mac: ## Собрать .app + .dmg для этого Mac → release/vX.Y.
 
 build-mac-universal: ## Universal .app + .dmg (Apple Silicon + Intel) и digipot-server
 	$(PY) build_macos.py --universal --with-server
+
+build-mac-egui: ## .app + .dmg нативного интерфейса egui для этого Mac (без Node)
+	$(PY) build_macos.py --egui
+
+build-mac-egui-universal: ## Universal .app + .dmg нативного интерфейса egui
+	$(PY) build_macos.py --egui --universal
 
 build-web: ## Собрать фронтенд и релизный digipot-server (без desktop-оболочки)
 	npm run build
