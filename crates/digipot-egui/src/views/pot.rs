@@ -54,9 +54,11 @@ fn left(ui: &mut Ui, sh: &Shared, ps: &mut PotState) {
             ui.vertical(|ui| {
                 ui.spacing_mut().slider_width = (ui.available_width() - 10.0).max(200.0);
                 let r = ui.add(egui::Slider::new(&mut draft, 0..=FS).show_value(false));
+                // keep the dragged value until the engine thread has caught up,
+                // otherwise the handle jumps back for a frame after release
                 if r.dragged() {
                     ps.draft = Some(draft);
-                } else {
+                } else if !sh.busy || ps.draft == Some(eff) {
                     ps.draft = None;
                 }
                 if r.changed() && draft != eff {

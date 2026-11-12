@@ -12,6 +12,7 @@ mod shots;
 mod theme;
 mod views;
 mod widgets;
+mod worker;
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
