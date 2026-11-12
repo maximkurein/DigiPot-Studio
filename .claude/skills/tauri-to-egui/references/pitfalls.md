@@ -16,6 +16,7 @@
 | Clippy `too_many_arguments` on drawing helpers | painter helpers take many params | `#[allow(clippy::too_many_arguments)]` on those functions only |
 | New eframe won't compile | MSRV jump (0.34+ needs Rust 1.92) | pin to the newest line that builds on the local rustc, comment why |
 | Linux CI fails to link | missing system libs | `apt-get install libxkbcommon-dev libgl1-mesa-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev libwayland-dev` |
+| Dock shows the egui logo, Finder/Applications shows the app icon | eframe sets its default icon at runtime (`setApplicationIconImage`) when `ViewportBuilder::icon` is empty, overriding the bundle `.icns` | `.with_icon(eframe::icon_data::from_png_bytes(include_bytes!("…/icons/icon.png"))?)` — same artwork as the `.icns`; also fixes `cargo run` |
 | computer-use / UI automation cannot find the app | a bare binary has no bundle id | test clicks against the bundled `.app` |
 | `checksum.txt` loses the other build's lines | build script overwrites it | merge: replace lines of produced files, keep the rest |
 | `__pycache__` committed after `py_compile` of the build script | no ignore rule | add `__pycache__/` to `.gitignore` |

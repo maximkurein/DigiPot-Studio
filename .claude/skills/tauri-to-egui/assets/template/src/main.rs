@@ -14,9 +14,20 @@ mod theme;
 mod views;
 mod worker;
 
+/// Same artwork as `src-tauri/icons/icon.icns`. Without it eframe installs its
+/// default egui logo as the application icon at runtime (macOS
+/// `setApplicationIconImage`), which replaces the bundle icon in the Dock.
+/// Path is relative to this file: crates/<app>-egui/src → repo root.
+const ICON_PNG: &[u8] = include_bytes!("../../../src-tauri/icons/icon.png");
+
 fn main() -> eframe::Result {
+    let mut viewport = eframe::egui::ViewportBuilder::default();
+    match eframe::icon_data::from_png_bytes(ICON_PNG) {
+        Ok(icon) => viewport = viewport.with_icon(icon),
+        Err(e) => eprintln!("app icon not loaded: {e}"),
+    }
     let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default()
+        viewport: viewport
             .with_title("__TITLE__")
             .with_inner_size([1440.0, 900.0])
             .with_min_inner_size([980.0, 640.0]),
