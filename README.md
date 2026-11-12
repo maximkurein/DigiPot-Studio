@@ -10,6 +10,7 @@
   <img src="https://img.shields.io/badge/Rust-stable-B7410E?style=flat-square&logo=rust" alt="Rust">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&logo=tauri&logoColor=white" alt="Tauri 2">
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19">
+  <img src="https://img.shields.io/badge/egui-0.33-4F46E5?style=flat-square" alt="egui 0.33">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Web-1F2937?style=flat-square" alt="macOS, Windows, Web">
 </p>
 
@@ -22,7 +23,7 @@
   &nbsp;·&nbsp; <a href="docs/INDEX_ru.md">Документация</a>
 </p>
 
-DigiPot Studio — настольное приложение для macOS и Windows (плюс веб-режим) для работы с платой **DIGI POT click (MikroE, MIKROE-923)** и изучения микросхемы **Microchip MCP4161** — 8-битного цифрового потенциометра с EEPROM и SPI. Вся инженерная модель написана на Rust; интерфейс — React + Tailwind в оболочке Tauri 2.
+DigiPot Studio — настольное приложение для macOS и Windows (плюс веб-режим) для работы с платой **DIGI POT click (MikroE, MIKROE-923)** и изучения микросхемы **Microchip MCP4161** — 8-битного цифрового потенциометра с EEPROM и SPI. Вся инженерная модель написана на Rust. Интерфейса два, с одинаковыми экранами: React + Tailwind в оболочке Tauri 2 (и в браузере в веб-режиме) и нативный на egui/eframe — без WebView и Node, поэтому `.dmg` весит около 4 МБ.
 
 Если платы под рукой нет — встроенный **симулятор кристалла** отвечает на те же кадры SPI, что и настоящий: память 16 × 9 бит, загрузка движка из EEPROM при включении, цикл записи EEPROM с флагом EEWA, пределы инкремента/декремента и ошибки команд (CMDERR).
 
@@ -85,7 +86,7 @@ npm ci
 npm run app        # desktop-приложение (Tauri, hot reload)
 ```
 
-Нативный интерфейс на egui (без WebView и Node, в разработке рядом с Tauri): `make egui` или `cargo run -p digipot-egui --release`. Он использует то же ядро и тот же файл настроек, что и Tauri-приложение. Как он устроен, с примерами кода — [EGUI.md](EGUI.md). Перенести так же другой Tauri-проект — скил [`tauri-to-egui`](.claude/skills/tauri-to-egui/README.md) и промт [PROMPT_TAURI_TO_EGUI.md](PROMPT_TAURI_TO_EGUI.md).
+Нативный интерфейс на egui (без WebView и Node, рядом с Tauri): `make egui` или `cargo run -p digipot-egui --release`; готовый `.dmg` — `python3 build_macos.py --egui`. Он использует то же ядро и тот же файл настроек, что и Tauri-приложение. Как он устроен, с примерами кода — [EGUI.md](EGUI.md). Перенести так же другой Tauri-проект — скил [`tauri-to-egui`](.claude/skills/tauri-to-egui/README.md) и промт [PROMPT_TAURI_TO_EGUI.md](PROMPT_TAURI_TO_EGUI.md).
 
 Веб-режим (удалённая лаборатория): `npm run web` → http://127.0.0.1:7878. Проверка модели из консоли: `cargo run -p digipot-core --example probe -- 200`.
 
@@ -114,15 +115,15 @@ npm run app        # desktop-приложение (Tauri, hot reload)
 ## Архитектура программы
 
 <p align="center">
-  <img src="docs/images/software-architecture.svg" alt="Архитектура: интерфейс React, транспорт Tauri/HTTP, ядро Rust, устройство" width="100%">
+  <img src="docs/images/software-architecture.svg" alt="Архитектура: интерфейс React (Tauri или браузер) или нативный egui, ядро Rust, устройство" width="100%">
 </p>
 
 ```
 crates/digipot-core     Rust: регистры, кадры SPI, модель, симулятор, транспорт, RPC-движок
 crates/digipot-server   HTTP-сервер (веб-режим): та же RPC + раздача интерфейса
+crates/digipot-egui     нативный интерфейс на egui/eframe (все экраны, движок в своём потоке)
 src-tauri/              desktop-оболочка Tauri 2
-crates/digipot-egui     нативный интерфейс на egui/eframe (все экраны, без WebView)
-src/                    интерфейс React 19 + Tailwind 4
+src/                    интерфейс React 19 + Tailwind 4 (Tauri и веб-режим)
 firmware/bridge/        прошивка USB-моста (Arduino-совместимые платы 3.3 В)
 ```
 

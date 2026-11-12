@@ -31,6 +31,7 @@ body:
       label: Режим
       options:
         - Desktop (Tauri)
+        - Нативный интерфейс (egui)
         - Веб / удалённая лаборатория (digipot-server)
     validations:
       required: true
