@@ -1,18 +1,20 @@
-//! Application shell: owns the Engine, routes views, runs actions.
+//! Application shell: routes views, runs actions, talks to the engine thread.
 //!
-//! Views never touch the Engine. They read `Shared` (the typed `State` taken
-//! once per frame) and queue `Act`s; the shell runs them after the frame.
-//! Mutations go through `Engine::handle`, the same RPC the Tauri app and the
-//! web server use, so every rule (EEPROM only via confirmed `nv_write`,
-//! auto-apply only for volatile registers) is enforced in one place.
+//! Views never touch the Engine. They read `Shared` (the latest typed `State`
+//! published by the engine thread, see `worker.rs`) and queue `Act`s; the
+//! shell turns them into `Job`s after the frame, so hardware I/O never blocks
+//! drawing. Mutations go through `Engine::handle`, the same RPC the Tauri app
+//! and the web server use, so every rule (EEPROM only via confirmed
+//! `nv_write`, auto-apply only for volatile registers) is enforced in one place.
 
 use crate::fmt::{eng, hex_w};
 use crate::theme::{self, Pal};
 use crate::views;
 use crate::widgets as w;
+use crate::worker::{Job, Reply, Worker};
 use digipot_core::api::{State, Txn};
 use digipot_core::regs::{self, REGS};
-use digipot_core::transport::{self, PortInfo, UsbDev};
+use digipot_core::transport::{PortInfo, UsbDev};
 use digipot_core::{about, Engine};
 use eframe::egui::{self, Align, Color32, Key, Layout, RichText};
 use egui_extras::{Column, TableBuilder};
@@ -80,6 +82,10 @@ pub struct Shared {
     pub console_open: bool,
     /// Wall-clock seconds for animations.
     pub time: f64,
+    /// The engine thread has queued or running jobs (bus I/O in progress).
+    pub busy: bool,
+    /// Busy for longer than a moment — show the indicator.
+    pub busy_shown: bool,
     acts: RefCell<Vec<Act>>,
 }
 
@@ -160,11 +166,12 @@ struct Toast {
 }
 
 pub struct App {
-    engine: Engine,
+    worker: Worker,
     sh: Shared,
     vs: ViewState,
     toasts: Vec<Toast>,
-    last_head: u64,
+    /// Since when the worker has been busy (for the top-bar indicator).
+    busy_since: Option<Instant>,
     t0: Instant,
     shots: Option<crate::shots::Shots>,
 }
@@ -192,12 +199,9 @@ impl App {
         let console_open = get("console").map(|c| c == "1").unwrap_or(false);
         let pal = Pal::get(dark);
         theme::apply(&cc.egui_ctx, &pal);
-        let mut engine = Engine::new(config_path());
-        let st = engine.state();
-        let log: Vec<Txn> = engine.log_since(0).cloned().collect();
-        let last_head = engine.log_head();
+        let (worker, st, log) = Worker::spawn(Engine::new(config_path()), cc.egui_ctx.clone());
         App {
-            engine,
+            worker,
             sh: Shared {
                 st,
                 log,
@@ -207,26 +211,72 @@ impl App {
                 focus: None,
                 console_open,
                 time: 0.0,
+                busy: false,
+                busy_shown: false,
                 acts: RefCell::new(vec![]),
             },
             vs: ViewState { hardware: HwState { baud: 115_200, ..Default::default() }, ..Default::default() },
             toasts: vec![],
-            last_head,
+            busy_since: None,
             t0: Instant::now(),
             shots: crate::shots::Shots::from_env(),
         }
     }
 
-    fn refresh(&mut self) {
-        self.sh.st = self.engine.state();
-        let head = self.engine.log_head();
-        if head != self.last_head {
-            self.sh.log.extend(self.engine.log_since(self.last_head).cloned());
-            let n = self.sh.log.len();
-            if n > 2000 {
-                self.sh.log.drain(..n - 2000);
+    /// Take what the engine thread published since the last frame.
+    fn refresh(&mut self, ctx: &egui::Context) {
+        let u = self.worker.take();
+        if let Some(st) = u.state {
+            self.sh.st = st;
+        }
+        if u.log_reset {
+            self.sh.log.clear();
+        }
+        self.sh.log.extend(u.log);
+        let n = self.sh.log.len();
+        if n > 2000 {
+            self.sh.log.drain(..n - 2000);
+        }
+        for r in u.replies {
+            match r {
+                Reply::Toast(t, s) => self.toast(t, s),
+                Reply::ExportText(text) => self.save_export(text),
+                Reply::Ports(ports, usb) => {
+                    let hw = &mut self.vs.hardware;
+                    hw.ports = ports;
+                    if hw.port.is_empty() {
+                        if let Some(p) = hw.ports.iter().find(|p| p.kind == "usb").or(hw.ports.first()) {
+                            hw.port = p.path.clone();
+                        }
+                    }
+                    hw.usb = Some(usb);
+                }
             }
-            self.last_head = head;
+        }
+        let busy = self.worker.busy();
+        self.busy_since = if busy { self.busy_since.or(Some(Instant::now())) } else { None };
+        self.sh.busy = busy;
+        // show the indicator only for jobs that take noticeable time
+        self.sh.busy_shown = self.busy_since.is_some_and(|t| t.elapsed() > Duration::from_millis(150));
+        if busy && !self.sh.busy_shown {
+            ctx.request_repaint_after(Duration::from_millis(160));
+        }
+    }
+
+    fn send(&mut self, job: Job) {
+        if !self.worker.send(job) {
+            self.toast(Tone::Err, "Поток движка остановлен — перезапустите приложение");
+        }
+    }
+
+    fn save_export(&mut self, text: String) {
+        if let Some(path) =
+            rfd::FileDialog::new().set_file_name("MCP4161_config.txt").add_filter("Текст", &["txt"]).save_file()
+        {
+            match std::fs::write(&path, text) {
+                Ok(()) => self.toast(Tone::Ok, format!("Конфигурация сохранена: {}", path.display())),
+                Err(e) => self.toast(Tone::Err, format!("{}: {}", path.display(), e)),
+            }
         }
     }
 
@@ -238,21 +288,9 @@ impl App {
         }
     }
 
-    fn rpc(&mut self, cmd: &str, args: Value) -> Option<Value> {
-        match self.engine.handle(cmd, args) {
-            Ok(v) => Some(v),
-            Err(e) => {
-                self.toast(Tone::Err, e.to_string());
-                None
-            }
-        }
-    }
-
     fn run(&mut self, ctx: &egui::Context, a: Act) {
         match a {
-            Act::Rpc(cmd, args) => {
-                self.rpc(cmd, args);
-            }
+            Act::Rpc(cmd, args) => self.send(Job::Rpc { cmd, args, ok: None }),
             Act::Go(v, b) => {
                 self.sh.view = v;
                 if let Some(b) = b {
@@ -262,66 +300,29 @@ impl App {
             Act::SelectBlock(b) => self.sh.block = b,
             Act::Focus(f) => self.sh.focus = f,
             Act::Toast(t, s) => self.toast(t, s),
-            Act::Export => {
-                let Some(r) = self.rpc("export_config", json!({})) else { return };
-                let text = r["text"].as_str().unwrap_or_default().to_string();
-                if let Some(path) =
-                    rfd::FileDialog::new().set_file_name("MCP4161_config.txt").add_filter("Текст", &["txt"]).save_file()
-                {
-                    match std::fs::write(&path, text) {
-                        Ok(()) => self.toast(Tone::Ok, format!("Конфигурация сохранена: {}", path.display())),
-                        Err(e) => self.toast(Tone::Err, format!("{}: {}", path.display(), e)),
-                    }
-                }
-            }
+            Act::Export => self.send(Job::Export),
             Act::Import => {
+                // the dialog stays on the UI thread (macOS requires it)
                 let Some(path) = rfd::FileDialog::new().add_filter("Текст", &["txt", "cfg", "csv"]).pick_file()
                 else {
                     return;
                 };
                 match std::fs::read_to_string(&path) {
-                    Ok(text) => {
-                        if self.rpc("import_config", json!({ "text": text })).is_some() {
-                            self.toast(Tone::Ok, "Конфигурация загружена");
-                        }
-                    }
+                    Ok(text) => self.send(Job::Rpc {
+                        cmd: "import_config",
+                        args: json!({ "text": text }),
+                        ok: Some("Конфигурация загружена".into()),
+                    }),
                     Err(e) => self.toast(Tone::Err, format!("{}: {}", path.display(), e)),
                 }
             }
-            Act::Raw(hex, drive) => {
-                let args = match drive {
-                    Some(d) => json!({ "hex": hex, "drive": d }),
-                    None => json!({ "hex": hex }),
-                };
-                if let Some(r) = self.rpc("raw", args) {
-                    let rx = r["rx"].as_str().filter(|s| !s.is_empty()).unwrap_or("—").to_string();
-                    self.toast(Tone::Info, format!("Ответ: {}", rx));
-                }
-            }
-            Act::ReadNv => {
-                for r in (0..regs::NUM_REGS).filter(|&r| regs::nv(r)) {
-                    if self.rpc("read_register", json!({ "index": r })).is_none() {
-                        break;
-                    }
-                }
-            }
+            Act::Raw(hex, drive) => self.send(Job::Raw { hex, drive }),
+            Act::ReadNv => self.send(Job::ReadNv),
             Act::RefreshPorts => {
-                let hw = &mut self.vs.hardware;
-                hw.ports = transport::list_ports();
-                if hw.port.is_empty() {
-                    if let Some(p) = hw.ports.iter().find(|p| p.kind == "usb").or(hw.ports.first()) {
-                        hw.port = p.path.clone();
-                    }
-                }
-                hw.usb = Some(transport::scan_usb().unwrap_or_default());
-                hw.loaded = true;
+                self.vs.hardware.loaded = true;
+                self.send(Job::Ports);
             }
-            Act::ClearLog => {
-                if self.rpc("clear_log", json!({})).is_some() {
-                    self.sh.log.clear();
-                    self.last_head = self.engine.log_head();
-                }
-            }
+            Act::ClearLog => self.send(Job::Rpc { cmd: "clear_log", args: json!({}), ok: None }),
             Act::Console(open) => self.sh.console_open = open,
             Act::Theme(dark) => {
                 self.sh.pal = Pal::get(dark);
@@ -348,7 +349,7 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.sh.time = self.t0.elapsed().as_secs_f64();
-        self.refresh();
+        self.refresh(ctx);
         self.shortcuts(ctx);
         if let Some((view, dark, console)) = self.shots.as_ref().and_then(|s| s.current()) {
             self.sh.view = view;
@@ -395,14 +396,12 @@ impl eframe::App for App {
             for a in acts {
                 self.run(ctx, a);
             }
-            self.refresh();
             ctx.request_repaint();
         }
         if let Some(s) = self.shots.as_mut() {
             s.tick(ctx);
         }
-        // live simulator status (EEPROM write cycle, meter) — same cadence as the web UI
-        ctx.request_repaint_after(Duration::from_millis(350));
+        // live simulator status: the engine thread repaints every 350 ms when it publishes
     }
 
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
@@ -532,6 +531,10 @@ fn top_bar(ctx: &egui::Context, sh: &Shared) {
                     }
                 }
 
+                if sh.busy_shown {
+                    ui.add(egui::Spinner::new().size(14.0).color(p.accent))
+                        .on_hover_text("Идёт обмен с кристаллом — интерфейс не ждёт его окончания");
+                }
                 let (tone, text) = state_info(sh);
                 if w::pill(ui, &p, &text, tone, true).on_hover_text("Состояние кристалла").clicked() {
                     sh.go(View::Overview);
